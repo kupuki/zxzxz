@@ -1,0 +1,70 @@
+from tkinter import *
+import sys
+root = Tk()
+root.title("colors watching")
+root.geometry("1x250")
+
+
+def closer():
+    sys.exit()
+
+
+def red():
+    lk.config(text="red")
+    vvod.delete(0, END)
+    vvod.insert(0, "#ff0000")
+
+
+def orange():
+    lk.config(text="orange")
+    vvod.delete(0, END)
+    vvod.insert(0, "#ff7d00")
+
+
+def yellow():
+    lk.config(text="yellow")
+    vvod.delete(0, END)
+    vvod.insert(0, "#ffff00")
+
+
+def green():
+    lk.config(text="green")
+    vvod.delete(0, END)
+    vvod.insert(0, "#00ff00")
+
+
+def blue():
+    lk.config(text="blue")
+    vvod.delete(0, END)
+    vvod.insert(0, "#007dff")
+
+
+def purple():
+    lk.config(text="purple")
+    vvod.delete(0, END)
+    vvod.insert(0, "#7d00ff")
+
+
+lk = Label(width=17)
+lk.pack()
+
+vvod = Entry(justify=CENTER)
+vvod.place(relx=0.01, rely=0.1)
+
+button2 = Button(width=15, text="red", bg="red", command=red)
+button2.place(relx=0.01, rely=0.2)
+button3 = Button(width=15, text="orange", bg="orange", command=orange)
+button3.place(relx=0.01, rely=0.3)
+button4 = Button(width=15, text="yellow", bg="yellow", command=yellow)
+button4.place(relx=0.01, rely=0.4)
+button5 = Button(width=15, text="green", bg="green", command=green)
+button5.place(relx=0.01, rely=0.5)
+button6 = Button(width=15, text="blue", bg="blue", command=blue)
+button6.place(relx=0.01, rely=0.6)
+button7 = Button(width=15, text="purple", bg="purple", command=purple)
+button7.place(relx=0.01, rely=0.7)
+
+button1 = Button(text="closer", command=closer)
+button1.place(relx=0.66, rely=0.9)
+
+root.mainloop()
