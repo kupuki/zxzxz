@@ -1,0 +1,199 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace School
+{
+
+
+    class Connect
+    {
+        //Data Source -сервер; Initial Catalog - БД; Integrated Security - вход по преверке подлинности Windows если сервер стоит у вас на компьюетере
+        public static string conn_str { get; } = @"Data Source = tcp:K1-205-TEACHER,49172; Initial Catalog = School2; Integrated Security = true;";
+    }
+}
+
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media.Imaging;
+namespace School.Windows
+{
+    /// <summary>
+    /// Логика взаимодействия для Clients.xaml
+    /// </summary>
+    public partial class Clients : Window
+    {
+        public Clients()
+        {
+            InitializeComponent();
+        }
+        private int left_chet = 0;
+        private int right_chet = 99999999;
+        int counter = 0;
+        public void Load_data(string birthday, string ld)
+        {
+            try
+            {
+                Clients_panel.Children.Clear();
+
+                using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+                {
+                    conn.Open();
+                    SqlCommand command = new SqlCommand($@"SELECT *,(select COUNT(ID) from Client) as count FROM Client {ld} 
+                    where (LastName like '{Search.Text}%' 
+                    or FirstName like '{Search.Text}%' 
+                    or Patronymic like '{Search.Text}%' 
+                    or Email like '{Search.Text}%' 
+                    or Phone like '{Search.Text}%') 
+                    and GenderCode like '{(Gender.SelectedIndex == 0 ? "" : Gender.SelectedIndex.ToString())}%' 
+                    and ID between {left_chet} and {(Cnt.SelectedIndex == 0 ? 99999999 : right_chet)} {birthday}", conn);
+                    SqlDataReader rd = command.ExecuteReader();
+                    if (rd.HasRows)
+                    {
+                        string qq = "";
+                        while (rd.Read())
+                        {
+                            if (rd[2].ToString() != qq)
+                            {
+                                Controls.Client client = new Controls.Client();
+                                client.Id.Content = rd[0].ToString();
+                                client.Fio.Content = $"{rd[2]} {rd[1]} {rd[3]}";
+                                client.Birthday.Content = rd[4];
+                                client.Reg_data.Content = rd[5];
+                                client.Email.Content = rd[6];
+                                client.Phone.Content = rd[7];
+                                client.Gender.Content = rd[8].ToString() == "1" ? "м" : "ж";
+                                client.Image.Source = new BitmapImage(new Uri(@"C:\Users\user\Desktop\pppr\School\bin\Debug\" + rd[9].ToString()));
+                                client._clients = this;
+                                User_all.Content = rd[10];
+                                Clients_panel.Children.Add(client);
+                                qq = rd[2].ToString();
+                            }
+                        }
+                    }
+                }
+            }
+
+            catch (Exception ex)
+            {
+                MessageBox.Show("wer" + ex);
+            }
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            Count_users();
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            Load_data("", ""); 
+        }
+
+        private void Gender_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Load_data("", "");
+        }
+
+        private void Gender_Loaded(object sender, RoutedEventArgs e)
+        {
+            Gender.SelectedIndex = 0;
+        }
+
+        private void Birthday_mouth_Click(object sender, RoutedEventArgs e)
+        {
+            Load_data($"AND Birthday like '%-{"0" + DateTime.Now.Month}-%'", "");
+        }
+
+        private void Add_client_Click(object sender, RoutedEventArgs e)
+        {
+            Edit edit = new Edit();
+            edit._clients = this; 
+            edit.ShowDialog(); 
+        }
+
+        private void Cnt_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Load_data("", "");
+
+            if (Cnt.SelectedIndex == 0)
+            {
+                right_chet = 9999999;
+                User_count.Content = User_all.Content;
+            }
+            else
+            {
+                left_chet = 0;
+                right_chet = int.Parse(Cnt.SelectedItem.ToString().Replace("System.Windows.Controls.ComboBoxItem:", ""));
+                User_count.Content = Cnt.SelectedItem.ToString().Replace("System.Windows.Controls.ComboBoxItem:", "");
+                Load_data("", "");
+            }
+
+        }
+
+        private void Left_Click(object sender, RoutedEventArgs e)
+        {
+            if (left_chet >= 10 && Cnt.SelectedIndex != 0)
+            {
+                left_chet -= int.Parse(Cnt.SelectedItem.ToString().Replace("System.Windows.Controls.ComboBoxItem:", ""));
+                right_chet -= int.Parse(Cnt.SelectedItem.ToString().Replace("System.Windows.Controls.ComboBoxItem:", ""));
+                User_count.Content = right_chet;
+                Load_data("", "");
+            }
+        }
+
+        private void Right_Click(object sender, RoutedEventArgs e)
+        {
+            if (left_chet < int.Parse(User_all.Content.ToString()) && Cnt.SelectedIndex != 0)
+            {
+                left_chet += int.Parse(Cnt.SelectedItem.ToString().Replace("System.Windows.Controls.ComboBoxItem:", ""));
+                right_chet += int.Parse(Cnt.SelectedItem.ToString().Replace("System.Windows.Controls.ComboBoxItem:", ""));
+                User_count.Content = right_chet;
+                Load_data("", "");
+            }
+        }
+
+        private void sort_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sort.SelectedIndex == 0)
+            {
+                Load_data(" ORDER BY LastName ", "");
+            }
+            else
+            {
+                Load_data("ORDER BY Meet.Meet_date DESC", "LEFT JOIN Meet ON Client.ID = Meet.Client_Id");
+            }
+        }
+        public void Count_users()
+        {
+            using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+            {
+                try
+                {
+                    conn.Open();
+
+                    int ss;
+                    SqlCommand cmd = conn.CreateCommand();
+                    cmd.CommandType = CommandType.Text;
+                    cmd.CommandText = "SELECT ID FROM Client;";
+                    DataTable dt = new DataTable();
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(dt);
+                    ss = da.Fill(dt);
+                    Count_userss.Content = ss.ToString() ;
+                    conn.Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex+"Уберите теги пользователя!", "Ошибкаааааааа");
+                }
+
+            }
+        }   
+    }
+}
