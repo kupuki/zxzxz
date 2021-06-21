@@ -1,0 +1,149 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Data.SqlClient;
+using School.Windows;
+using System.Data;
+
+namespace School.Controls
+{
+    /// <summary>
+    /// Логика взаимодействия для Client.xaml
+    /// </summary>
+    public partial class Client : UserControl 
+    {
+        public Clients _clients; 
+        
+        public Client()
+        {
+            InitializeComponent();
+        }
+
+        private void Tag_panel_Loaded(object sender, RoutedEventArgs e)
+        {
+            using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+            {
+                conn.Open();
+                SqlCommand command = new SqlCommand($@"SELECT Tag.Title, Tag.Color FROM Tag INNER JOIN TagOfClient ON Tag.ID = TagOfClient.TagID where TagOfClient.ClientID = {Id.Content}", conn); 
+                SqlDataReader rd = command.ExecuteReader();
+                if (rd.HasRows)
+                {
+                    while (rd.Read())
+                    {
+                        Label tag = new Label
+                        {
+                            Content = rd[0]
+                        };
+                        switch (rd[1].ToString().Trim()) 
+                        {
+                            case "Black":
+                                tag.Foreground = Brushes.Black;
+                                tag.FontSize = 14;
+                                break;
+                            case "Green":
+                                tag.Foreground = Brushes.Green;
+                                tag.FontSize = 14;
+                                break;
+                            case "Red":
+                                tag.Foreground = Brushes.Red;
+                                tag.FontSize = 14;
+                                break;
+                            default:
+                                break;
+                        }
+                        Tag_panel.Children.Add(tag); 
+                    }
+                }
+            }
+        }
+
+        private void Edit_client_Click(object sender, RoutedEventArgs e) 
+        {
+            Edit ed = new Edit(); 
+            string[] fakeArr = Fio.Content.ToString().Split();
+            ed.LastName.Text = fakeArr[0];
+            ed.FirstName.Text = fakeArr[1];
+            ed.Patronymic.Text = fakeArr[2];
+            ed.Email.Text = Email.Content.ToString();
+            ed.Phone.Text = Phone.Content.ToString();
+            ed.Birthday.SelectedDate = Convert.ToDateTime(Birthday.Content.ToString());
+            ed.Id.Content = Id.Content;
+            ed.Photo.Source = Image.Source;
+            ed.Gender.SelectedIndex = Gender.Content.ToString() == "м" ? 0 : 1;
+            ed._clients = _clients;
+            ed.ShowDialog();
+        }
+
+        private void Meet_but_Click(object sender, RoutedEventArgs e) // format sql '2007-09-08 12:35:29'
+        {
+            using (SqlConnection conn = new SqlConnection(Connect.conn_str)) 
+            {
+                conn.Open();
+                SqlCommand command = new SqlCommand($@"SELECT ClientService.ServiceID, ClientService.ClientID, ClientService.StartTime, Service.Title FROM Service
+INNER JOIN ClientService ON ClientService.ServiceID = Service.ID
+INNER JOIN Client ON ClientService.ClientID = Client.ID where ClientID = {Id.Content}", conn);
+                SqlDataReader reader = command.ExecuteReader();
+                if (reader.HasRows)
+                {
+                    string a = "";
+                    string b = "";
+                    string c = ""; // Нужно сделать поровнее 
+                    string[] arr ;
+                    string arrd = "";
+                    while (reader.Read())
+                    {
+                        b = reader[2].ToString();
+                        c = reader[3].ToString();
+                        arrd +=  b + "    "+ c + "\n" + "\n";
+                    }
+                    MessageBox.Show(arrd,  "Посещения клиента"); 
+                }
+                else
+                    MessageBox.Show("Посещения отсутствуют!", "Посещения клиента");
+            }
+        }
+
+        private void Delete_Click(object sender, RoutedEventArgs e) 
+        {
+            using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+            {
+                try
+                {
+                    conn.Open();
+                    
+                    SqlCommand command2 = new SqlCommand($@"if 0 = (SELECT count([Client_Id])
+                                  FROM MEET where Client_Id = {Id.Content})
+                                  DELETE FROM Client
+                                      WHERE ID = {Id.Content} ", conn);
+                    if (command2.ExecuteNonQuery() != 1)
+                    {
+                        MessageBox.Show("Удаление невозможно, присутствуют посещения!", "Посещения клиента");
+                    }
+                    else
+                    {
+                        
+                        _clients.Load_data("", "");
+                        _clients.Count_users();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Уберите теги пользователя!", "Ошибка");
+                }
+
+            }
+            
+        }
+    }
+}
