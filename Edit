@@ -1,0 +1,228 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using System.Data.SqlClient;
+using Microsoft.Win32;
+using System.IO;
+using System.Text.RegularExpressions;
+
+namespace School.Windows
+{
+    /// <summary>
+    /// Логика взаимодействия для Edit.xaml
+    /// </summary>
+    public partial class Edit : Window
+    {
+        public Edit()
+        {
+            InitializeComponent();
+        }
+        int i = 0;
+        public string Photo_path; 
+        public Clients _clients;
+        public Edit _edit;
+        private void Save_Upd_Btn(object sender, RoutedEventArgs e) 
+        {
+            if (Id.Content.ToString() != "ID") 
+            using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+            {
+                conn.Open();
+                SqlCommand command = new SqlCommand($@"UPDATE Client
+                       SET [FirstName] = '{FirstName.Text}'
+                          ,[LastName] = '{LastName.Text}'
+                          ,[Patronymic] = '{Patronymic.Text}'
+                          ,[Birthday] = '{Birthday.SelectedDate}'
+                          ,[Email] = '{Email.Text}'
+                          ,[Phone] = '{Phone.Text}'
+                          ,[GenderCode] = '{Gender.SelectedIndex+1}'
+                          ,[PhotoPath] = '{Photo_path}'
+                     WHERE ID = {Id.Content}", conn);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    MessageBox.Show("Сохранено");
+                }
+                catch 
+                {
+                    MessageBox.Show("Не корректные данные!");
+                }
+            }
+            else 
+                using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+                {
+                    var email = Email.Text;
+                    var phone = Phone.Text;
+                    var LastNamee = LastName.Text;
+                    var FirstNamee = FirstName.Text;
+                    var Pat = Patronymic.Text;
+                    const string checkEmail = @"(\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*)";
+                    const string checkPhone = @"^(\s*)?(\+)?([- _():=+]?\d[- _():=+]?){10,14}(\s*)?$";
+                    //const string checkFIO = @"^\p{Lu}\p{Ll}*(?:-\p{Lu}\p{Ll}*)?$";
+                    //const string checkFIO2 = @"^[0-9]+\s+([a-zA-Z]+|[a-zA-Z]+\s[a-zA-Z]+)$";
+                    if (Regex.IsMatch(email, checkEmail) && Regex.IsMatch(phone, checkPhone) && i > 0 && LastName.Text.Length < 50 && FirstName.Text.Length < 50 && Patronymic.Text.Length < 50)
+                    {
+                        conn.Open();
+                        SqlCommand command = new SqlCommand($@"INSERT INTO Client (FirstName, LastName, Patronymic, Birthday, RegistrationDate, Email, Phone, GenderCode, PhotoPath)
+                                     VALUES
+                                           ('{FirstName.Text}','{LastName.Text}','{Patronymic.Text}', '{Birthday.SelectedDate}' ,'{DateTime.Now}'
+                                           ,'{Email.Text}','{Phone.Text}','{Gender.SelectedIndex + 1}','{Photo_path}')",
+                                              conn);
+
+                        try
+                        {
+                            command.ExecuteNonQuery();
+                            MessageBox.Show("Пользователь добавлен", "Уведомление");
+                            this.Close();
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex + "Системная ошибка");
+                        }
+                    }
+                    else if (Regex.IsMatch(email, checkEmail) == false && Regex.IsMatch(phone, checkPhone) == false)
+                    {
+                        MessageBox.Show("Введите корректный номер телефона и почту", "Ошибка");
+                    }
+                    else if (i == 0)
+                    {
+                        MessageBox.Show("Поставте аватарку", "Ошибка"); 
+                    }
+                    else if (Regex.IsMatch(phone, checkPhone) == false)
+                    {
+                        MessageBox.Show("Введите корректный номер телефона", "Ошибка");
+                    }
+                    else if (Regex.IsMatch(email, checkEmail) == false)
+                    {
+                        MessageBox.Show("Введите корректную почту", "Ошибка");
+                    }
+                    else if (LastName.Text.Length > 50 || FirstName.Text.Length > 50 || Patronymic.Text.Length > 50)
+                    {
+                        MessageBox.Show("Ошибка в ФИО", "Ошибка");
+                    }
+                    /*else if (Regex.IsMatch(LastNamee, checkFIO2) == false)
+                    {
+                        MessageBox.Show("Фио может иметь только дефис и пробел last");
+                    }
+                    else if (Regex.IsMatch(FirstNamee, checkFIO2) == false)
+                    {
+                        MessageBox.Show("Фио может иметь только дефис и пробел first");
+                    }
+                    else if (Regex.IsMatch(Pat, checkFIO2) == false)
+                    {
+                        MessageBox.Show("Фио может иметь только дефис и пробел pat");
+                    }*/
+
+                }
+        }
+        private void Add_photo_Btn(object sender, MouseButtonEventArgs e) 
+        {
+            i = 0;
+            OpenFileDialog saveFile = new OpenFileDialog(); 
+            if (saveFile.ShowDialog() == true) 
+            {
+                Photo.Source = new BitmapImage(new Uri(saveFile.FileName)); 
+                try
+                {
+                    File.Copy(saveFile.FileName, @".\Клиенты\" + saveFile.SafeFileName, true);
+                    Photo_path = @"Клиенты\" + saveFile.SafeFileName;
+                    i += 1;
+                }
+                catch
+                {
+                    Photo_path = "qqq";
+                }   
+            }   
+        }
+        private void Tag_panel_Loaded(object sender, RoutedEventArgs e) 
+        {
+            Tag_panel.Children.Clear();
+            if(Id.Content.ToString() != "ID")
+            using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+            {
+                conn.Open();
+                SqlCommand command = new SqlCommand($@"SELECT Tag.Title, Tag.Color FROM Tag INNER JOIN
+                                                    TagOfClient ON Tag.ID = TagOfClient.TagID where TagOfClient.ClientID = {Id.Content}", conn);
+                SqlDataReader rd = command.ExecuteReader();
+                if (rd.HasRows)
+                {
+                    while (rd.Read())
+                    {
+                            Label tag = new Label
+                            {
+                                Content = rd[0]
+                            };
+                            switch (rd[1].ToString().Trim())
+                        {
+                            case "Black":
+                                tag.Foreground = Brushes.Black;
+                                break;
+                            case "Green":
+                                tag.Foreground = Brushes.Green;
+                                break;
+                            case "Red":
+                                tag.Foreground = Brushes.Red;
+                                break;
+                            default:
+                                break;
+                        }
+                        tag.MouseLeftButtonDown += Del_Teg_Click;
+                        Tag_panel.Children.Add(tag);
+                    }
+                }
+            }
+        }
+
+        private void Del_Teg_Click(object sender, MouseButtonEventArgs e)
+        {
+            using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+            {
+                conn.Open();
+                SqlCommand command = new SqlCommand($@"DELETE FROM TagOfClient
+                              WHERE ClientID = {Id.Content} and TagID = (SELECT  [ID]
+                          FROM Tag where Title = '{(sender as Label).Content}')", conn);
+                command.ExecuteNonQuery();
+                Tag_panel_Loaded(sender, e);
+            }
+        }
+        private void Add_tag_Click(object sender, RoutedEventArgs e)
+        {
+                using (SqlConnection conn = new SqlConnection(Connect.conn_str))
+                {
+                    conn.Open();
+                    SqlCommand command = new SqlCommand($@"INSERT INTO TagOfClient (ClientID, TagID) VALUES
+                                       ({Id.Content}
+                                       ,{Tags.SelectedIndex+1})", conn);
+                    try
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    /*catch (SqlException)
+                    {
+                    MessageBox.Show("Теги можно добавлять после добавления пользователя", "Уведомление!");
+                    }*/
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Системная ошибка", "Уведомление!" );
+                    }
+                
+                    Tag_panel_Loaded(sender,e);
+                }
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            _clients.Load_data("","");
+            _clients.Count_users();
+        }
+    }
+}
