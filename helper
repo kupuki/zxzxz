@@ -1,0 +1,57 @@
+1. Переделать таблицу услуги.
+2. Переделать sql запрос. поставить тип данных nvarchar в столбце стоимость, длительность, скидка(Service). 
+3. Запрос на добавление данных в таблицу Gender
+4. Импорт таблицы клиент
+5. Импорт таблицы услуги
+6. Импорт Клиент/услуги. Запрос   INSERT INTO ClientService (ClientID, ServiceID, StartTime) 
+  SELECT Client.ID, Service.ID, TableSS.Start 
+  FROM TableSS
+INNER JOIN  Client ON TableSS.SecondNameClient=Client.FirstName
+INNER JOIN Service ON TableSS.Service = Service.Title; 
+
+
+ПОСМОТРЕТЬ ТИП ДАННЫХ У ДАТЫ В ПОСЛЕДНЕЙ ТАБЛИЦЫ В EXCEL AND SQL
+
+
+
+
+
+INSERT INTO ClientService (ClientID, ServiceID, StartTime) SELECT Client.ID, Service.ID, FF.Start FROM Client INNER JOIN Service ON Client.ID = Service.ID 
+INNER JOIN FF ON FF.SecondNameClient = Service.ID WHERE FF.SecondNameClient = Client.ID ;
+
+INSERT INTO ClientService (ClientID, ServiceID) SELECT Client.ID, Service.ID FROM Client INNER JOIN Service ON Client.ID = Service.ID;
+
+TRUNCATE TABLE ClientService;
+  SELECT FirstName, LastName FROM Client Where ID = 1;
+
+
+
+  INSERT INTO ClientService (ClientID, ServiceID, StartTime) 
+  SELECT Client.ID, Service.ID, TableSS.Start 
+  FROM TableSS
+INNER JOIN  Client ON TableSS.SecondNameClient=Client.FirstName
+INNER JOIN Service ON TableSS.Service = Service.Title;
+
+
+
+
+
+
+SELECT ClientService.ServiceID,  ClientService.ClientID, Meet.Client_id, Service.Title FROM Service
+INNER JOIN ClientService ON ClientService.ServiceID = Service.ID
+INNER JOIN MEET ON ClientService.ClientID = Meet.Client_id;
+
+SELECT ClientService.ServiceID, ClientService.ClientID, Meet.Meet_date, Service.Title FROM Service
+INNER JOIN ClientService ON ClientService.ServiceID = Service.ID
+INNER JOIN MEET ON ClientService.ClientID = Meet.Client_id WHERE ClientID = 1;
+
+INSERT INTO Meet VALUES (4, '2007-09-08 12:35:29'), (4, '2007-11-08 12:35:29');
+
+
+
+SELECT ClientService.ServiceID, ClientService.ClientID, ClientService.StartTime, Service.Title FROM Service
+INNER JOIN ClientService ON ClientService.ServiceID = Service.ID
+INNER JOIN Client ON ClientService.ClientID = Client.ID where ClientID = 4;
+
+
+SELECT * FROM ClientService WHERE ClientID = 4;
